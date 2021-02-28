@@ -51,10 +51,12 @@ namespace AlphaFlashSelectClient.stomp
 
         public StompMessage readMessage()
         {
-            byte[] bytes;
+            Stream bytes;
 
             while ((bytes = readFrame()).Length == 0)
                 Console.WriteLine("Heartbeart");
+
+            bytes.Position = 0;
 
             return new StompMessage(bytes);
         }
@@ -65,7 +67,7 @@ namespace AlphaFlashSelectClient.stomp
             tcpClient.GetStream().Write(new byte[] { 0 });
         }
 
-        byte[] readFrame()
+        Stream readFrame()
         {
             //TODO - this should use the bulk read call for better performance
             int i;
@@ -78,7 +80,7 @@ namespace AlphaFlashSelectClient.stomp
             {
 
                 if (i == 0 || (memoryStream.Length == 0 && i == '\n'))
-                    return memoryStream.ToArray();
+                    return memoryStream;
 
                 byte b = System.Convert.ToByte(i);
 
