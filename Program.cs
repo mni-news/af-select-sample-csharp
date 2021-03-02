@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Net.Http.Headers;
 
 namespace AlphaFlashSelectClient
 {
@@ -23,22 +24,51 @@ namespace AlphaFlashSelectClient
 
             HttpClient httpClient = new HttpClient();
 
-
-
-            Console.WriteLine("ASD");
             HttpResponseMessage response = await httpClient
                 .PostAsJsonAsync(
                     "https://api.alphaflash.com/api/auth/alphaflash-client/token", 
                     new AuthRequest { Username = "dev", Password = "4Development" }
                     );
 
+        
+
+
             AuthResponse authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
 
-            Console.WriteLine("ASD" + response.StatusCode);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Bearer",authResponse.AccessToken
+            );
 
-            Console.WriteLine(authResponse.AccessToken);
+            long totalPages = 0;
+            long currentPage = 0;
 
-            StompConnection stompConnection = new StompConnection("alphaflash01.chi0.mni-news.com", 61613);
+            do {
+
+                Page<Event> calendarData = await httpClient.GetFromJsonAsync<Page<Event>>(
+                    $"https://api.alphaflash.com/api/select/calendar/events?page={currentPage}"
+                );
+
+                currentPage++;
+                totalPages = calendarData.TotalPages;
+
+
+
+                Console.WriteLine(calendarData.Content.Count);
+
+                calendarData.Content.ForEach( (e)=>{
+                    Console.WriteLine($"{e.Id} {e.Date}");
+                });
+              
+
+                Console.WriteLine(currentPage);
+
+               
+
+            } while(currentPage < totalPages);
+
+
+
+            StompConnection stompConnection = new StompConnection("select.alphaflash.com", 61613);
 
             StompMessage connectResult =   stompConnection.connect(authResponse.AccessToken);
             stompConnection.Subscribe("/topic/observations");
