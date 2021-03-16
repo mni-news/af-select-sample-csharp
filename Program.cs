@@ -1,6 +1,5 @@
 ﻿using AlphaFlashSelectClient.dto;
 using AlphaFlashSelectClient.stomp;
-//using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -8,6 +7,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Net.Http.Headers;
+using AlphaFlashSelectClient.service;
+using Extend;
 
 namespace AlphaFlashSelectClient
 {
@@ -39,32 +40,21 @@ namespace AlphaFlashSelectClient
                 "Bearer",authResponse.AccessToken
             );
 
-            long totalPages = 0;
-            long currentPage = 0;
-
-            do {
-
-                Page<Event> calendarData = await httpClient.GetFromJsonAsync<Page<Event>>(
-                    $"https://api.alphaflash.com/api/select/calendar/events?page={currentPage}"
-                );
-
-                currentPage++;
-                totalPages = calendarData.TotalPages;
+            SelectDataService selectDataService = new SelectDataService(httpClient);
 
 
+            List<Event> events = await selectDataService.getCalendarEventsBetween(
+                DateTimeOffset.Now.Subtract(new TimeSpan(4, 0 , 0, 0)), 
+                DateTimeOffset.Now.Add(new TimeSpan(4,0 , 0, 0))
+            );
 
-                Console.WriteLine(calendarData.Content.Count);
+            events.ForEach( x => {
+                Console.WriteLine($"{x.Id} - {x.Title} - {x.Date}");
+            });
 
-                calendarData.Content.ForEach( (e)=>{
-                    Console.WriteLine($"{e.Id} {e.Date}");
-                });
-              
+            List<DataSeries> series = await selectDataService.GetAllDataSeries();
 
-                Console.WriteLine(currentPage);
-
-               
-
-            } while(currentPage < totalPages);
+            series.ForEach( s => Console.WriteLine($"{s.Id} - {s.Display}"));
 
 
 
@@ -73,7 +63,7 @@ namespace AlphaFlashSelectClient
             StompMessage connectResult =   stompConnection.connect(authResponse.AccessToken);
             stompConnection.Subscribe("/topic/observations");
 
-            Console.WriteLine(connectResult.MessageType);
+            Console.WriteLine(connectResult.ToString());
 
             while (true)
             {

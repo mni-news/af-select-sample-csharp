@@ -82,5 +82,22 @@ namespace AlphaFlashSelectClient.stomp
 
             this.headers[key].Add(value);
         }
+
+        public override string ToString(){
+            string result = this.MessageType + "\n";
+
+            foreach (string s in headers.Keys)
+            {
+                foreach (string v in headers[s])
+                {
+                    result+=$"{s}:{v}\n";
+                }
+            }
+
+            result+="\n";
+            result+=this.Body;
+
+            return result;
+        }
     }
 }

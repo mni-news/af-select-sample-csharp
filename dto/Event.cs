@@ -23,8 +23,17 @@ namespace AlphaFlashSelectClient.dto {
         [JsonPropertyName("id")]
         public string Id {get;set;}
 
+        [JsonPropertyName("dataReleaseId")]
+        public long DataReleaseId {get;set;}
+
         [JsonPropertyName("date")]
-        public DateTime Date {get;set;}
+        public DateTimeOffset Date {get;set;}
+
+        [JsonPropertyName("country")]
+        public string Country {get;set;}
+
+        [JsonPropertyName("title")]
+        public string Title {get;set;}
     }
 
 }
