@@ -2,7 +2,7 @@
 using System;
 using System.Text.Json.Serialization;
 
-namespace AlphaFlashSelectClient.dto {
+namespace AlphaFlash.Select.Dto {
 
 
     class Event {

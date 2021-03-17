@@ -1,16 +1,16 @@
-﻿using AlphaFlashSelectClient.dto;
-using AlphaFlashSelectClient.stomp;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Net.Http.Json;
-using System.Text.Json;
 using System.Threading.Tasks;
-using System.Net.Http.Headers;
-using AlphaFlashSelectClient.service;
-using Extend;
+using AlphaFlash.Select.Service;
+using AlphaFlash.Select.Dto;
+using System.Threading;
+using System.Reflection;
+using AlphaFlash.Select.Demo;
+using System.Text.Json;
+using System.IO;
 
-namespace AlphaFlashSelectClient
+namespace AlphaFlash.Select
 {
     class Program
     {
@@ -22,64 +22,74 @@ namespace AlphaFlashSelectClient
 
         static async Task RunAsync()
         {
+            Config config;
+
+            try{
+                config =  JsonSerializer.Deserialize<Config>(File.ReadAllText("config.json"));
+            } catch (Exception e){
+                Console.WriteLine( 
+@"Could not load config file. To Run, place a file called 'config.json' in the project. Example:
+
+{
+    ""username"":""test"",
+    ""password"":""xxxxxx""
+}
+");
+
+                return;
+            }
 
             HttpClient httpClient = new HttpClient();
-
-            HttpResponseMessage response = await httpClient
-                .PostAsJsonAsync(
-                    "https://api.alphaflash.com/api/auth/alphaflash-client/token", 
-                    new AuthRequest { Username = "dev", Password = "4Development" }
-                    );
-
-        
-
-
-            AuthResponse authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-                "Bearer",authResponse.AccessToken
-            );
-
+            AuthenticationService authenticationService = new AuthenticationService(httpClient);
             SelectDataService selectDataService = new SelectDataService(httpClient);
-
-
-            List<Event> events = await selectDataService.getCalendarEventsBetween(
-                DateTimeOffset.Now.Subtract(new TimeSpan(4, 0 , 0, 0)), 
-                DateTimeOffset.Now.Add(new TimeSpan(4,0 , 0, 0))
+            SelectRealTimeDataService realTimeDataService = new SimpleSelectRealTimeDataService(
+                "select.alphaflash.com", 61614, true
             );
+            
+            AuthResponse authResponse = await authenticationService.Authenticate(config.Username,config.Password);
 
-            events.ForEach( x => {
-                Console.WriteLine($"{x.Id} - {x.Title} - {x.Date}");
-            });
-
-            List<DataSeries> series = await selectDataService.GetAllDataSeries();
-
-            series.ForEach( s => Console.WriteLine($"{s.Id} - {s.Display}"));
+            httpClient.DefaultRequestHeaders.Authorization = authResponse.AuthenticationHeaderValue;
+            realTimeDataService.AccessToken = authResponse.AccessToken;
+            string refreshToken = authResponse.RefreshToken;
 
 
+            Timer timer = new Timer(state=>{
 
-            StompConnection stompConnection = new StompConnection("select.alphaflash.com", 61613);
+                authenticationService.Refresh(refreshToken).ContinueWith(task=>{
 
-            StompMessage connectResult =   stompConnection.connect(authResponse.AccessToken);
-            stompConnection.Subscribe("/topic/observations");
+                    AuthResponse response = task.Result;
 
-            Console.WriteLine(connectResult.ToString());
+                    httpClient.DefaultRequestHeaders.Authorization = response.AuthenticationHeaderValue;
+                    realTimeDataService.AccessToken = response.AccessToken;
+                    refreshToken = response.RefreshToken;
 
-            while (true)
-            {
-                StompMessage stompMessage = stompConnection.readMessage();
+                });
 
-                Console.WriteLine(stompMessage.MessageType);
-                Console.WriteLine(stompMessage.Body);
+            },null,5000,5000);
+    
 
-                List<Observation> observatons = JsonSerializer.Deserialize<List<Observation>>(stompMessage.Body);
+            List<DataSeries> allDataSeries = await selectDataService.GetAllDataSeries();
 
+            realTimeDataService.ConnectHandler = message =>Console.WriteLine("Connected");
+            realTimeDataService.DisconnectHandler = ()=>Console.WriteLine("Disconnected");
+            realTimeDataService.ConnectFailHandler = message => Console.WriteLine("Connection Failed");
+            realTimeDataService.ExceptionHandler = e => Console.WriteLine(e.Message);
 
-                foreach (Observation o in observatons)
-                {
-                    Console.WriteLine(o);
-                }
-            }
+            realTimeDataService.ObservationHandler = observaions => {
+
+                allDataSeries.ForEach(series => {
+
+                    observaions.ForEach(observaion => {
+                        if (series.Id == observaion.DataSeriesId){
+                            Console.WriteLine($"{series.Id} - {series.Display}: {observaion.Value}");
+                        }
+                    });
+                    
+                });
+
+            };
+
+            realTimeDataService.Run();
 
 
         }

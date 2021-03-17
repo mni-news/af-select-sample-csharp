@@ -1,10 +1,11 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Serialization;
 
-namespace AlphaFlashSelectClient.dto
+namespace AlphaFlash.Select.Dto
 {
     class AuthResponse
     {
@@ -12,5 +13,12 @@ namespace AlphaFlashSelectClient.dto
         public string AccessToken { get; set; }
         [JsonPropertyName("refresh_token")]
         public string RefreshToken { get; set; }
+
+
+        public AuthenticationHeaderValue AuthenticationHeaderValue {
+            get{
+                return new AuthenticationHeaderValue("Bearer",AccessToken);
+            }
+        }
     }
 }

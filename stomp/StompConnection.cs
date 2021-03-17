@@ -1,23 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Net.Security;
 using System.Net.Sockets;
-using System.Text;
 
-namespace AlphaFlashSelectClient.stomp
+namespace AlphaFlash.Select.Stomp
 {
     class StompConnection
     {
 
         private readonly string host;
         private readonly int port;
-
+        private readonly bool useSSL;
+        private Stream stream;
         private TcpClient tcpClient;
 
-        public StompConnection(string host, int port)
+        public StompConnection(string host, int port, bool ssl)
         {
             this.host = host;
             this.port = port;
+            this.useSSL = ssl;
         }
 
         public StompMessage connect(string accessToken)
@@ -25,11 +26,22 @@ namespace AlphaFlashSelectClient.stomp
 
             this.tcpClient = new TcpClient(host, port);
 
+            if (useSSL){
+                SslStream sslStream = new SslStream(tcpClient.GetStream(), false);
+
+                sslStream.AuthenticateAsClient(host);
+
+                this.stream = sslStream;
+                
+            }else
+                this.stream = tcpClient.GetStream();
+
 
             StompMessage connectMessage = new StompMessage("CONNECT");
 
             connectMessage.addHeader("passcode", accessToken);
             connectMessage.addHeader("heart-beat", "0,30000");
+            connectMessage.addHeader("accept-version", "1.0,1.1,1.2");
 
             WriteMessage(connectMessage);
 
@@ -45,6 +57,7 @@ namespace AlphaFlashSelectClient.stomp
             StompMessage connectMessage = new StompMessage("SUBSCRIBE");
 
             connectMessage.addHeader("destination", destination);
+            connectMessage.addHeader("id", destination);
         
             WriteMessage(connectMessage);
         }
@@ -54,7 +67,7 @@ namespace AlphaFlashSelectClient.stomp
             Stream bytes;
 
             while ((bytes = readFrame()).Length == 0)
-                Console.WriteLine("Heartbeart");
+                ;
 
             bytes.Position = 0;
 
@@ -63,8 +76,8 @@ namespace AlphaFlashSelectClient.stomp
 
         public void WriteMessage(StompMessage stompMessage)
         {
-            tcpClient.GetStream().Write(stompMessage.ToBytes());
-            tcpClient.GetStream().Write(new byte[] { 0 });
+            stream.Write(stompMessage.ToBytes());
+            stream.Write(new byte[] { 0 });
         }
 
         Stream readFrame()
@@ -76,7 +89,7 @@ namespace AlphaFlashSelectClient.stomp
             byte[] buffer = new byte[1024];
 
 
-            while ((i = tcpClient.GetStream().ReadByte()) != -1)
+            while ((i = stream.ReadByte()) != -1)
             {
 
                 if (i == 0 || (memoryStream.Length == 0 && i == '\n'))
@@ -88,6 +101,10 @@ namespace AlphaFlashSelectClient.stomp
             }
 
             throw new Exception("Unexpected end of stream");
+        }
+
+        public void Close(){
+            this.tcpClient.Close();
         }
     }
 }

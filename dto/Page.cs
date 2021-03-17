@@ -3,7 +3,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace AlphaFlashSelectClient.dto
+namespace AlphaFlash.Select.Dto
 {
     class Page<T> {
 

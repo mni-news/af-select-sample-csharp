@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace AlphaFlashSelectClient.stomp
+namespace AlphaFlash.Select.Stomp
 {
     class StompMessage
     {
@@ -81,6 +81,13 @@ namespace AlphaFlashSelectClient.stomp
                 this.headers.Add(key, new List<string>());
 
             this.headers[key].Add(value);
+        }
+
+        public string GetFirstHeader(string key){
+            if (this.headers.ContainsKey(key) && this.headers[key].Count > 0)
+                return this.headers[key][0];
+
+            return null;
         }
 
         public override string ToString(){

@@ -3,10 +3,16 @@
 
 using System.Text.Json.Serialization;
 
-namespace AlphaFlashSelectClient.dto {
+namespace AlphaFlash.Select.Dto {
+
+    class DataSeriesRef{
+        [JsonPropertyName("id")]
+        public long Id {get;set;}
+    }
+
     class DataSeries {
 
-         [JsonPropertyName("id")]
+        [JsonPropertyName("id")]
         public long Id {get;set;}
 
         [JsonPropertyName("display")]
