@@ -26,7 +26,7 @@ namespace AlphaFlash.Select
             try{
                 config =  JsonSerializer.Deserialize<Config>(File.ReadAllText("config.json"));
             } catch (Exception e){
-                
+
                 Console.WriteLine( 
 @"Could not load config file. To Run, place a file called 'config.json' in the project. Example:
 
@@ -92,6 +92,10 @@ namespace AlphaFlash.Select
             // This handler gets actual data from the service
             //
             List<DataSeries> allDataSeries = await selectDataService.GetAllDataSeries();
+
+            allDataSeries.ForEach(series=>{
+                Console.WriteLine($"{series.Id} - {series.Display} - {series.Scale?.Display} - {series.Type.Display}");
+            });
 
             realTimeDataService.ObservationHandler = observaions => {
 
