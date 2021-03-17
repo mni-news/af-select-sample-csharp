@@ -39,6 +39,11 @@ namespace AlphaFlash.Select.Service {
                     {
                         StompMessage stompMessage = _stompConnection.readMessage();
 
+                        if (stompMessage == null){
+                            this.HeartbeatHandler.Invoke();
+                            continue;
+                        }
+
                         if (V.Equals(stompMessage.GetFirstHeader("destination"))){
                             List<Observation> observatons = JsonSerializer.Deserialize<List<Observation>>(stompMessage.Body);
 

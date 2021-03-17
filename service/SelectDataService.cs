@@ -11,10 +11,7 @@ namespace AlphaFlash.Select.Service {
 
     class SelectDataService{
         private readonly HttpClient httpClient;
-
-        int PAGE_SIZE = 10;
     
-
         public SelectDataService(HttpClient httpClient){
             this.httpClient = httpClient;
         }

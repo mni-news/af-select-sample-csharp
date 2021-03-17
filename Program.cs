@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using AlphaFlash.Select.Service;
 using AlphaFlash.Select.Dto;
 using System.Threading;
-using System.Reflection;
 using AlphaFlash.Select.Demo;
 using System.Text.Json;
 using System.IO;
@@ -27,11 +26,12 @@ namespace AlphaFlash.Select
             try{
                 config =  JsonSerializer.Deserialize<Config>(File.ReadAllText("config.json"));
             } catch (Exception e){
+                
                 Console.WriteLine( 
 @"Could not load config file. To Run, place a file called 'config.json' in the project. Example:
 
 {
-    ""username"":""test"",
+    ""username"":""xxxxxx"",
     ""password"":""xxxxxx""
 }
 ");
@@ -39,6 +39,9 @@ namespace AlphaFlash.Select
                 return;
             }
 
+            //
+            // Initialize help classes
+            //
             HttpClient httpClient = new HttpClient();
             AuthenticationService authenticationService = new AuthenticationService(httpClient);
             SelectDataService selectDataService = new SelectDataService(httpClient);
@@ -46,6 +49,10 @@ namespace AlphaFlash.Select
                 "select.alphaflash.com", 61614, true
             );
             
+
+            //
+            // Authenticate, then set up a scheduled task to refresh tokens
+            //
             AuthResponse authResponse = await authenticationService.Authenticate(config.Username,config.Password);
 
             httpClient.DefaultRequestHeaders.Authorization = authResponse.AuthenticationHeaderValue;
@@ -63,17 +70,28 @@ namespace AlphaFlash.Select
                     realTimeDataService.AccessToken = response.AccessToken;
                     refreshToken = response.RefreshToken;
 
+                    Console.WriteLine("Refreshed Tokens");
+
                 });
 
-            },null,5000,5000);
+            },null,120_000,120_000);
     
 
-            List<DataSeries> allDataSeries = await selectDataService.GetAllDataSeries();
-
+            
+            //
+            // Some handlers for events in the real time service
+            //
             realTimeDataService.ConnectHandler = message =>Console.WriteLine("Connected");
             realTimeDataService.DisconnectHandler = ()=>Console.WriteLine("Disconnected");
             realTimeDataService.ConnectFailHandler = message => Console.WriteLine("Connection Failed");
             realTimeDataService.ExceptionHandler = e => Console.WriteLine(e.Message);
+            realTimeDataService.HeartbeatHandler = () => Console.WriteLine("Hearbeat");
+
+
+            //
+            // This handler gets actual data from the service
+            //
+            List<DataSeries> allDataSeries = await selectDataService.GetAllDataSeries();
 
             realTimeDataService.ObservationHandler = observaions => {
 

@@ -66,8 +66,8 @@ namespace AlphaFlash.Select.Stomp
         {
             Stream bytes;
 
-            while ((bytes = readFrame()).Length == 0)
-                ;
+            if ((bytes = readFrame()).Length == 0)
+                return null;
 
             bytes.Position = 0;
 

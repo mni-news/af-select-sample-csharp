@@ -18,6 +18,7 @@ namespace AlphaFlash.Select.Service {
         public Action<StompMessage> ConnectFailHandler {get; set;} = o => {};
         public Action<Exception> ExceptionHandler {get; set;} = o => {};
         public Action DisconnectHandler {get; set;} = () => {};
+        public Action HeartbeatHandler {get; set;} = () => {};
         public bool Running {get;set;} = true;
         public int ReconnectQuietMillis {get;set;} = 5000;
         public string AccessToken {get;set;}
