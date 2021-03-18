@@ -4,6 +4,14 @@
 
 This is a sample C# client for AlphaFlash Select. 
 
+
+>
+> ### Using This Code
+>
+> This code is meant to provide a demonstration for connecting to the AlphaFlash Select service. It is provided
+> "as-is".
+>
+
 ## Dependencies
 
 This project uses NuGet to manage third-party dependencies. 
